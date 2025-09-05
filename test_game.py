@@ -1,11 +1,16 @@
-from game import SimpleDrivingGame
+from game import CheckpointGatesGame
 import pygame
 
-# Create the game
-game = SimpleDrivingGame()
+# Create the checkpoint gates game
+game = CheckpointGatesGame()
 
 # Manual control loop
 running = True
+print("Manual Controls:")
+print("Arrow Keys: Left/Right to steer, Up to accelerate, Down to brake")
+print("Goal: Drive through the numbered gates in sequence!")
+print("Green gate = current target, White = future, Gray = completed")
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -27,11 +32,23 @@ while running:
     # Step the game
     state, reward, done = game.step(action)
     
+    # Print feedback when gates are passed
+    if reward > 50:  # Gate passed (gets 100 reward)
+        print(f"Gate {game.gates_passed} passed! Reward: {reward:.1f}")
+        print(f"Next target: Gate {game.current_gate + 1}")
+    
     if done:
-        print(f"Game over! Distance traveled: {game.distance_traveled}")
+        if game.gates_passed >= game.total_gates:
+            print(f"🎉 ALL GATES COMPLETED! Total gates: {game.gates_passed}")
+        else:
+            print(f"Time limit reached. Gates passed: {game.gates_passed}/{game.total_gates}")
+        
+        # Reset for another attempt
+        print("Resetting for another attempt...")
         game.reset()
     
     # Render
     game.render()
 
 pygame.quit()
+print("Game ended!")

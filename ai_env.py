@@ -1,26 +1,26 @@
 import gym
 from gym import spaces
 import numpy as np
-from game import SimpleDrivingGame
+from game import CheckpointGatesGame
 
-class DrivingEnv(gym.Env):
+class CheckpointRacingEnv(gym.Env):
     def __init__(self):
-        super(DrivingEnv, self).__init__()
+        super(CheckpointRacingEnv, self).__init__()
         
-        self.game = SimpleDrivingGame()
+        self.game = CheckpointGatesGame()
         
         # Action space: 5 discrete actions
         # 0=nothing, 1=left, 2=right, 3=accelerate, 4=brake
         self.action_space = spaces.Discrete(5)
         
-        # Observation space: [left_dist, right_dist, speed, angle, track_direction]
+        # Observation space: [distance_to_checkpoint, angle_to_checkpoint, speed, car_angle, progress]
         self.observation_space = spaces.Box(
-            low=np.array([0, 0, 0, -1, -1]),
+            low=np.array([0, -1, 0, 0, 0]),
             high=np.array([1, 1, 1, 1, 1]),
             dtype=np.float32
         )
         
-        self.max_steps = 1000
+        self.max_steps = 3000  # Enough time to complete the course
         self.current_step = 0
         
     def seed(self, seed=None):
@@ -29,23 +29,30 @@ class DrivingEnv(gym.Env):
         return [seed]
         
     def reset(self, seed=None, options=None):
-        """Updated reset method"""
+        """Reset the environment"""
         if seed is not None:
             self.seed(seed)
         self.current_step = 0
         obs = self.game.reset().astype(np.float32)
-        return obs, {}  # New gym format returns (obs, info)
+        
+        # Return format depends on gym version
+        # Try both formats for compatibility
+        try:
+            # New format (obs, info)
+            return obs, {}
+        except:
+            # Old format (just obs)
+            return obs
     
     def step(self, action):
         self.current_step += 1
         
         state, reward, done = self.game.step(action)
         
-        # End episode if too many steps
+        # End episode if max steps reached
         if self.current_step >= self.max_steps:
             done = True
-            
-        # New gym format: (obs, reward, terminated, truncated, info)
+        
         truncated = self.current_step >= self.max_steps
         terminated = done and not truncated
         
